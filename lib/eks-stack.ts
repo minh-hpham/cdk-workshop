@@ -6,7 +6,7 @@ import * as kms from '@aws-cdk/aws-kms';
 
 export interface ClusterProps extends cdk.StackProps {
     clusterName: string
-    version: string
+    version: eks.KubernetesVersion
 }
 
 export class EKSCluster extends cdk.Stack {
@@ -22,7 +22,7 @@ export class EKSCluster extends cdk.Stack {
         const etcdEncryptionKey = new kms.Key(this, "etcdEncryptionKey", { enabled: true })
         this.cluster = new eks.Cluster(this, 'eks-cluster', {
             clusterName: props?.clusterName,
-            version: eks.KubernetesVersion.of(props? props.version : "v1_21"),
+            version: props? props.version : eks.KubernetesVersion.V1_21,
             secretsEncryptionKey: etcdEncryptionKey,
             endpointAccess: eks.EndpointAccess.PRIVATE,
             placeClusterHandlerInVpc: true,
