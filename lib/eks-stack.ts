@@ -42,12 +42,10 @@ export class EKSCluster extends cdk.Stack {
             "ecr:BatchGetImage"],
             resources: ["*"],
         })
-        AmazonEKSForFargateServiceRolePolicy.addCondition("ArnLike", {
-            "aws:SourceArn": `arn:aws:eks:${region}:${accountID}:fargateprofile/*`
-         })
         const fargatePodExecutionRole = new iam.Role(this, "AmazonEKSFargatePodExecutionRole", {
             roleName: "AmazonEKSFargatePodExecutionRole",
-            assumedBy: new iam.ServicePrincipal("eks-fargate-pods.amazonaws.com"),
+            assumedBy: new iam.PrincipalWithConditions(new iam.ServicePrincipal("eks-fargate-pods.amazonaws.com"),
+                {"ArnLike": {"aws:SourceArn": `arn:aws:eks:${region}:${accountID}:fargateprofile/*`}}),
             inlinePolicies: {
                 AmazonEKSForFargateServiceRolePolicy: new iam.PolicyDocument({
                     statements: [AmazonEKSForFargateServiceRolePolicy]
