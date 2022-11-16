@@ -15,6 +15,14 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 * `cdk synth`       emits the synthesized CloudFormation template
 * `cdk bootstrap`   The first time you deploy an AWS CDK app into an environment (account/region), you'll need to install a "bootstrap stack".
 
+## Bastion host
+
+ec2 instance. Remember to [install session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) in your local machine to start a session on this host.
+
+```
+aws ssm start-session --target $BASTION_INSTANCE_ID --region=$AWS_REGION
+```
+
 ## Troubleshooting
 
 * ` ❌ Deployment failed: Error: Stack Deployments Failed: SignatureDoesNotMatch: Signature expired: 20221110T044729Z is now earlier than 20221110T140749Z (20221110T142249Z - 15 min.)`
