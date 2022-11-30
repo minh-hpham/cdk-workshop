@@ -1,10 +1,10 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam'
-import { Role, ServicePrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam'
 
 export interface BastionInstanceProps extends cdk.StackProps {
     vpc: ec2.IVpc;
+    role: iam.Role;
 }
 
 export class BastionStack extends cdk.Stack {
@@ -28,14 +28,7 @@ export class BastionStack extends cdk.Stack {
             "curl -Lo aws-iam-authenticator https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.5.9/aws-iam-authenticator_0.5.9_linux_amd64",
             "chmod +x aws-iam-authenticator",
             "mv ./aws-iam-authenticator /usr/bin",
-            )
-
-        // define the IAM role that will allow the EC2 instance to communicate with SSM 
-        const role = new Role(this, 'BastionRole', {
-            assumedBy: new ServicePrincipal('ec2.amazonaws.com')
-        });
-        // arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'));
+        )
 
         // create the instance
         // doesn't need security group because ec2 instances resides on vpc and kubectl only talks to port 443 of the control plane ENI.
@@ -54,6 +47,7 @@ export class BastionStack extends cdk.Stack {
                 generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
             }),
             userData: ssmaUserData,
-            role: role, // instance profile is created internally
+            role: props.role, // instance profile is created internally
         })
+
     }}

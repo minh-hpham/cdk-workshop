@@ -15,6 +15,7 @@ export interface ClusterProps extends cdk.StackProps {
 export class EKSCluster extends cdk.Stack {
     public cluster: eks.Cluster;
     public bastionSecurityGroup: ec2.SecurityGroup;
+    public bastionRole: iam.Role;
 
     constructor(scope: Construct, id: string,  props: ClusterProps) {
     // for this class to use injected info from scope and props
@@ -104,6 +105,45 @@ export class EKSCluster extends cdk.Stack {
             vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
             allowAllOutbound: false
         })
-        autoscalingGroup.addSecurityGroup(workersSecuirityGroup)
+        autoscalingGroup.addSecurityGroup(workersSecuirityGroup);
+
+                // define the IAM role that will allow the EC2 instance to communicate with SSM 
+        // Create Custom IAM Role and Policies for Bastion Host
+        // https://docs.aws.amazon.com/eks/latest/userguide/security_iam_id-based-policy-examples.html#policy_example3
+        const bastionHostPolicy = new iam.ManagedPolicy(this, 'bastionHostManagedPolicy');
+        bastionHostPolicy.addStatements(new iam.PolicyStatement({
+            resources: ['*'],
+            actions: [
+                'eks:DescribeNodegroup',
+                'eks:ListNodegroups',
+                'eks:DescribeCluster',
+                'eks:ListClusters',
+                'eks:AccessKubernetesApi',
+                'eks:ListUpdates',
+                'eks:ListFargateProfiles',
+            ],
+            effect: iam.Effect.ALLOW,
+            sid: 'EKSReadonly',
+        }));
+
+        const bastionRole = new iam.Role(this, 'BastionRole', {
+            roleName: "eks-bastion",
+            assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+            managedPolicies: [
+                // SSM Manager Permissions
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+                // Read only EKS Permissions
+                bastionHostPolicy,
+              ],
+        });
+        // allow bastion to access cluster as master role because i'm lazy to set up proper user and group
+        this.cluster.awsAuth.addMastersRole(bastionRole, `${bastionRole.roleArn}`);
+        this.bastionRole = bastionRole
+        // Generating outputs
+        new cdk.CfnOutput(this, 'eksBastionRoleArn', {
+            description: 'eks bastion role arn',
+            exportName: `ekscluster1002BastionRoleArn`,
+            value: bastionRole.roleArn,
+        });
     }
 }

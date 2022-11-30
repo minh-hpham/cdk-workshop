@@ -36,4 +36,5 @@ const eksCluster = new EKSCluster(app, `eks-${clusterName}`, {
 const clusterBastion = new BastionStack(app, `bastion-${clusterName}`, {
     env: env,
     vpc: clusterVPC.vpc,
+    role: eksCluster.bastionRole
 })
